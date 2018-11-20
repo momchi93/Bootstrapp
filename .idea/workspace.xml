@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="c29cd2b6-5c2e-4ef6-a550-ee2f293463d4" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/AR_Model1.py" beforeDir="false" afterPath="$PROJECT_DIR$/AR_Model1.py" afterDir="false" />
-    </list>
+    <list default="true" id="c29cd2b6-5c2e-4ef6-a550-ee2f293463d4" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,7 +56,7 @@
     <session id="-1653478905">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="8" />
+          <entry key="project.closed" value="9" />
           <entry key="project.open.time.12" value="1" />
           <entry key="project.open.time.13" value="1" />
           <entry key="project.open.time.14" value="1" />
@@ -102,7 +100,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/AR_Model1.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="292">
+            <state relative-caret-position="530">
               <caret line="127" column="2" selection-start-line="127" selection-start-column="2" selection-end-line="127" selection-end-column="2" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
@@ -387,7 +385,7 @@
       <window_info id="Favorites" order="2" sideWeight="0.5186667" side_tool="true" weight="0.14818764" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.8086354" visible="true" weight="0.33568406" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.8086354" weight="0.33568406" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -473,7 +471,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/AR_Model1.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="292">
+        <state relative-caret-position="530">
           <caret line="127" column="2" selection-start-line="127" selection-start-column="2" selection-end-line="127" selection-end-column="2" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
