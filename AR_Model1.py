@@ -119,7 +119,7 @@ def bootstrap_estimate(res, g, samples, freqrange):
     return bootstrap_spectral_density_estimate
 
 
-b_samples = 10
+b_samples = 100
 b_sde = np.empty([b_samples, n_samples ])
 #g = 0.05
 for i in range(b_samples):
