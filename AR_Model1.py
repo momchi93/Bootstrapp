@@ -3,32 +3,16 @@ import matplotlib.pyplot as plt
 import cmath
 import math
 
-np.random.seed(1)
-n_samples = 256
-a1 = 0.5
-a2 = -0.6
-a3 = 0.3
-a4 = -0.4
-a5 = 0.2
-x = n = np.random.normal(size=n_samples)
-for t in range(5, n_samples):
-    x[t] = a1 * x[t - 1] + a2 * x[t - 2] + a3 * x[t - 3] + a4 * x[t - 4] + a5 * x[t - 5] + n[t]
-
 
 def periodogramm(inputt, omega, samples):
     const = 1 / (2 * math.pi * samples)
     expo = np.zeros([1, samples], dtype=np.complex)
-    for i1 in range(0, 256):
+    for i1 in range(0, samples):
         expo[0, i1] = cmath.exp(0 - 1j * i1 * omega)
     return const * (abs(np.sum(inputt * expo)) ** 2)
 
 
-w = np.linspace(0, math.pi, n_samples, endpoint=True)
-Pxx_Density = np.zeros([n_samples, ])
-for i in range(0, n_samples):
-    Pxx_Density[i] = periodogramm(x, w[i], n_samples)
-
-
+# The Bartlett-Priestly Window: M.B.Priestly, Spectral Analysis and Time Series, page 444
 def kernel_function(arg):
     if abs(arg) <= 1:
         return 0.75 * (1 - arg ** 2)
@@ -44,6 +28,22 @@ def spectral_density_estimator(h1, powerspec, samples, freqrange, freqK):
     summ = sum(const * kernel * powerspec)
     return summ
 
+
+#np.random.seed(1)
+n_samples = 64
+a1 = 0.5
+a2 = -0.6
+a3 = 0.3
+a4 = -0.4
+a5 = 0.2
+x = n = np.random.normal(size=n_samples)
+for t in range(5, n_samples):
+    x[t] = a1 * x[t - 1] + a2 * x[t - 2] + a3 * x[t - 3] + a4 * x[t - 4] + a5 * x[t - 5] + n[t]
+
+w = np.linspace(0, math.pi, n_samples, endpoint=True)
+Pxx_Density = np.zeros([n_samples, ])
+for i in range(0, n_samples):
+    Pxx_Density[i] = periodogramm(x, w[i], n_samples)
 
 SpectralDensityEstimate = np.zeros([n_samples, ])
 h = 0.05
@@ -99,28 +99,29 @@ for i in range(0, n_samples):
 # Step 4 - Bootstrap Residuals
 
 
-def draw_residuals(residualss):
-    independent_bootstrap_residuals = np.zeros([n_samples, ])
-    for i3 in range(0, n_samples):
+def draw_residuals(residualss, samples):
+    independent_bootstrap_residuals = np.zeros([samples, ])
+    for i3 in range(0, samples):
         independent_bootstrap_residuals[i3] = np.random.choice(residualss)
     return independent_bootstrap_residuals
 
 
-print(SpectralDensityEstimate_Centered[0])
+print('SpectralDensityEstimate_Centered_0 = ' + str(SpectralDensityEstimate_Centered[0]))
 
 
 # Step 5 - Bootstrap Estimate
-def bootstrap_estimate(res, g):
-    residualz = draw_residuals(res)
+def bootstrap_estimate(res, g, samples, freqrange):
+    residualz = draw_residuals(res, samples)
     pxxdensity = SpectralDensityEstimate_Centered * residualz
-    bootstrap_spectral_density_estimate = np.zeros([n_samples, ])
-    for p1 in range(0, n_samples):
-        bootstrap_spectral_density_estimate[p1] = spectral_density_estimator(g, pxxdensity, n_samples, w, p1)
+    bootstrap_spectral_density_estimate = np.zeros([samples, ])
+    for p1 in range(0, samples):
+        bootstrap_spectral_density_estimate[p1] = spectral_density_estimator(g, pxxdensity, samples, freqrange, p1)
     return bootstrap_spectral_density_estimate
 
 
-b_samples = 30
-b_sde1 = np.empty([b_samples, ])
+b_samples = 1000
+b_sde0 = np.empty([b_samples, ])
 for i in range(b_samples):
-    b_sde1[i] = bootstrap_estimate(residuals_rescaled, 0.05)[0]
-print(b_sde1)
+    b_sde0[i] = bootstrap_estimate(residuals_rescaled, 0.05, n_samples, w)[0]
+print(b_sde0)
+print('Mean = ' + str(np.mean(b_sde0)) + '  Varianz = ' + str(np.var(b_sde0)))
