@@ -30,7 +30,7 @@ def spectral_density_estimator(h1, powerspec, samples, freqrange, freqK):
 
 
 np.random.seed(123)
-n_samples = 256
+n_samples = 8
 a1 = 0.5
 a2 = -0.6
 a3 = 0.3
@@ -119,10 +119,11 @@ def bootstrap_estimate(res, g, samples, freqrange):
     return bootstrap_spectral_density_estimate
 
 
-b_samples = 100
+b_samples = 4
 b_sde = np.empty([b_samples, n_samples ])
 #g = 0.05
 for i in range(b_samples):
     for p in range(n_samples):
         b_sde[i, p] = bootstrap_estimate(residuals_rescaled, 0.05, n_samples, w)[p]
-print('Mean = ' + str(np.mean(b_sde)) + '  Varianz = ' + str(np.var(b_sde)))
+#print('Mean = ' + str(np.mean(b_sde)) + '  Varianz = ' + str(np.var(b_sde)))
+print(b_sde)
