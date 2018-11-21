@@ -106,23 +106,24 @@ def draw_residuals(residualss, samples):
     return independent_bootstrap_residuals
 
 
-print('SpectralDensityEstimate_Centered_0 = ' + str(SpectralDensityEstimate_Centered[0]))
-
-
 # Step 5 - Bootstrap Estimate
-def bootstrap_estimate(res, g, samples, freqrange):
-    residualz = draw_residuals(res, samples) #e
-    pxxdensity = SpectralDensityEstimate_Centered * residualz
+def bootstrap_estimate(res, g, samples, freqrange, sde_centered):
+    residualz = draw_residuals(res, samples)  # e
+    pxxdensity = sde_centered * residualz
     bootstrap_spectral_density_estimate = np.zeros([samples, ])
     for p1 in range(0, samples):
         bootstrap_spectral_density_estimate[p1] = spectral_density_estimator(g, pxxdensity, samples, freqrange, p1)
     return bootstrap_spectral_density_estimate
 
 
-b_samples = 10
-b_sde = np.empty([b_samples, n_samples ])
-#g = 0.05
+b_samples = 30
+b_sde = np.empty([b_samples, n_samples])
+# g = 0.05
 for i in range(b_samples):
     for p in range(n_samples):
-        b_sde[i, p] = bootstrap_estimate(residuals_rescaled, 0.05, n_samples, w)[p]
-print('Mean = ' + str(np.mean(b_sde)) + '  Varianz = ' + str(np.var(b_sde)))
+        b_sde[i, p] = bootstrap_estimate(residuals_rescaled, 0.05, n_samples, w, SpectralDensityEstimate_Centered)[p]
+print('SpectralDensityEstimate_Centered, first 4 elements ')
+print(SpectralDensityEstimate_Centered[:5])
+for p in range(5):
+    print('Mean = ' + str(np.mean(b_sde[:, p])) + '  Variance = ' + str(np.var(b_sde[:, p])))
+    print('Max = '+str(max(b_sde[:, p]))+'Min = '+str(min(b_sde[:, p])) )
