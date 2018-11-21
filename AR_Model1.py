@@ -126,4 +126,4 @@ print('SpectralDensityEstimate_Centered, first 4 elements ')
 print(SpectralDensityEstimate_Centered[:5])
 for p in range(5):
     print('Mean = ' + str(np.mean(b_sde[:, p])) + '  Variance = ' + str(np.var(b_sde[:, p])))
-    print('Max = '+str(max(b_sde[:, p]))+'Min = '+str(min(b_sde[:, p])) )
+    print('Max = ' + str(max(b_sde[:, p])) + 'Min = ' + str(min(b_sde[:, p])))
