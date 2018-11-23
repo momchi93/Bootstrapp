@@ -1,15 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import cmath
-import math
 
 
-def periodogramm(inputt, omega, samples):
-    const = 1 / (2 * math.pi * samples)
-    expo = np.zeros([1, samples], dtype=np.complex)
-    for i1 in range(0, samples):
-        expo[0, i1] = cmath.exp(0 - 1j * i1 * omega)
-    return const * (abs(np.sum(inputt * expo)) ** 2)
+def periodogramm(inputt, samples):
+    t = np.arange(samples)
+    N = int(np.floor(samples/2))
+    omega = 2 * np.pi * np.arange(N+1) / samples
+    Pxx_Density = np.zeros(N + 1)
+    for i1 in range(N + 1):
+        Pxx_Density[i1] = (1/samples) * np.abs(np.sum(inputt * np.exp(-1j * omega[i1] * t)))**2
+    return Pxx_Density
 
 
 # The Bartlett-Priestly Window: M.B.Priestly, Spectral Analysis and Time Series, page 444
@@ -20,110 +20,81 @@ def kernel_function(arg):
         return 0
 
 
-def spectral_density_estimator(h1, powerspec, samples, freqrange, freqK):
-    const = 1 / (h1 * samples)
-    kernel = np.zeros([samples, ])
-    for i2 in range(0, samples):
-        kernel[i2] = kernel_function((freqrange[freqK] - freqrange[i2]) / h1)
-    summ = sum(const * kernel * powerspec)
-    return summ
-
-
-np.random.seed(123)
-n_samples = 256
-a1 = 0.5
-a2 = -0.6
-a3 = 0.3
-a4 = -0.4
-a5 = 0.2
-x = n = np.random.normal(size=n_samples)
-for t in range(5, n_samples):
-    x[t] = a1 * x[t - 1] + a2 * x[t - 2] + a3 * x[t - 3] + a4 * x[t - 4] + a5 * x[t - 5] + n[t]
-
-w = np.linspace(0, math.pi, n_samples, endpoint=True)
-Pxx_Density = np.zeros([n_samples, ])
-for i in range(0, n_samples):
-    Pxx_Density[i] = periodogramm(x, w[i], n_samples)
-
-SpectralDensityEstimate = np.zeros([n_samples, ])
-h = 0.05
-
-for p in range(0, n_samples):
-    SpectralDensityEstimate[p] = spectral_density_estimator(h, Pxx_Density, n_samples, w, p)
-
-plt.subplot(3, 1, 1)
-plt.plot(x)
-plt.ylabel('AR(5) Time Series')
-plt.xlabel('time T, 0<=T<=256')
-plt.subplot(3, 1, 2)
-plt.plot(w, Pxx_Density)
-plt.xlabel('frequency W, 0<=W<=3.14(pi)')
-plt.ylabel('Periodogram Ixx(W)')
-plt.subplot(3, 1, 3)
-plt.plot(w, SpectralDensityEstimate)
-plt.xlabel('frequency W, 0<=W<=3.14(pi)')
-plt.ylabel('PSD Estimate')
-plt.subplots_adjust(hspace=0.5)
-# plt.show()
-
-print('The residual based bootstrap residual')
-# input('Press key to continue')
-
-# Step 1 - Centering
-
-x_centered = np.empty([n_samples, ])
-x_mean = sum(x) / len(x)
-for i in range(0, n_samples):
-    x_centered[i] = x[i] - x_mean
-
-# Step 2 - Initial Estimate
-
-Pxx_Density_Centered = np.zeros([n_samples, ])
-SpectralDensityEstimate_Centered = np.zeros([n_samples, ])
-for i in range(0, n_samples):
-    Pxx_Density_Centered[i] = periodogramm(x_centered, w[i], n_samples)
-for p in range(0, n_samples):
-    SpectralDensityEstimate_Centered[p] = spectral_density_estimator(h, Pxx_Density_Centered, n_samples, w, p)
-
-# Step 3 - Compute and Rescale Residuals
-
-residuals = residuals_rescaled = np.zeros([n_samples, ])
-for i in range(0, n_samples):
-    residuals[i] = Pxx_Density_Centered[i] / SpectralDensityEstimate_Centered[i]
-residuals_mean = np.mean(residuals)
-
-for i in range(0, n_samples):
-    residuals_rescaled[i] = (residuals[i] / residuals_mean)
-
-
-# Step 4 - Bootstrap Residuals
+def spectral_density_estimator(h1, powerspec, samples):
+    N = powerspec.size-1
+    omega = 2 * np.pi * np.arange(N+1) / samples
+    SpectralDensityEstimate = np.zeros(N + 1)
+    for i1 in range(N + 1):
+        kernel = np.zeros(N + 1)
+        for i2 in range(N + 1):
+                kernel[i2] = kernel_function((omega[i1] - omega[i2]) / h1)
+        SpectralDensityEstimate[i1] = sum((kernel * powerspec) / (h1 * samples))
+    return SpectralDensityEstimate
 
 
 def draw_residuals(residualss, samples):
-    independent_bootstrap_residuals = np.zeros([samples, ])
-    for i3 in range(0, samples):
+    independent_bootstrap_residuals = np.zeros(samples)
+    for i3 in range(samples):
         independent_bootstrap_residuals[i3] = np.random.choice(residualss)
     return independent_bootstrap_residuals
 
 
 # Step 5 - Bootstrap Estimate
-def bootstrap_estimate(res, g, samples, freqrange, sde_centered):
+def bootstrap_estimate(res, g, sde_centered, samples):
     residualz = draw_residuals(res, samples)  # e
     pxxdensity = sde_centered * residualz
-    bootstrap_spectral_density_estimate = np.zeros([samples, ])
-    for p1 in range(0, samples):
-        bootstrap_spectral_density_estimate[p1] = spectral_density_estimator(g, pxxdensity, samples, freqrange, p1)
+    pxxdensity[0] = 0
+    bootstrap_spectral_density_estimate = spectral_density_estimator(g, pxxdensity, samples)
     return bootstrap_spectral_density_estimate
 
 
-b_samples = 30
-b_sde = np.empty([b_samples, n_samples])
-# g = 0.05
-for i in range(b_samples):
-    for p in range(n_samples):
-        b_sde[i, p] = bootstrap_estimate(residuals_rescaled, 0.05, n_samples, w, SpectralDensityEstimate_Centered)[p]
-print('SpectralDensityEstimate_Centered, first 4 elements ')
-print(SpectralDensityEstimate_Centered[:5])
-for p in range(5):
-    print('Mean = ' + str(np.mean(b_sde[:, p])) + '  Variance = ' + str(np.var(b_sde[:, p])))
-    print('Max = ' + str(max(b_sde[:, p])) + 'Min = ' + str(min(b_sde[:, p])))
+np.random.seed(123)
+n_samples = 256
+n = int((n_samples/2)+1)
+a1 = 0.5
+a2 = -0.6
+a3 = 0.3
+a4 = -0.4
+a5 = 0.2
+alpha = 0.05
+h = g = 0.05
+x = noise = np.random.normal(size=n_samples)
+w = (2 * np.pi * np.arange(n))/n_samples
+for t in range(5, n_samples):
+    x[t] = a1 * x[t - 1] + a2 * x[t - 2] + a3 * x[t - 3] + a4 * x[t - 4] + a5 * x[t - 5] + noise[t]
+
+# Step 1 Center
+
+x_centered = x - x.mean()
+
+# Step 2 Initial Estimate
+
+Ixx_density_centered = periodogramm(x_centered, n_samples)
+Cxx_estimate_centered = spectral_density_estimator(h, Ixx_density_centered, n_samples)
+
+# Step 3 Compute and Rescale Residuals
+
+residuals = Ixx_density_centered/Cxx_estimate_centered
+residuals_rescaled = residuals/np.mean(residuals)
+
+# Step 4,5 & 6 Bootstrap Residuals and Estimate
+b_samples = 100
+b_sde = np.zeros([b_samples, n])
+for c in range(b_samples):
+    b_sde[c, :] = bootstrap_estimate(residuals, g, Cxx_estimate_centered, n)
+
+# Step 7 Confidence Interval Estimation
+
+upper_index = int(np.ceil((b_samples-1)*(1-alpha)))
+lower_index = int(np.floor((b_samples-1)*alpha))
+
+print(b_sde)
+b_sde.sort(axis=0)
+print(b_sde)
+Cxx_estimate_centered_upper = b_sde[upper_index, :]
+Cxx_estimate_centered_lower = b_sde[lower_index, :]
+
+plt.plot(w, Cxx_estimate_centered)
+plt.plot(w, Cxx_estimate_centered_upper)
+plt.plot(w, Cxx_estimate_centered_lower)
+plt.show()
