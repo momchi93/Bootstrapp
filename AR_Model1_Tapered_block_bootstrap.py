@@ -39,10 +39,10 @@ def spectral_density_estimator(h1, powerspec, samples):
     return SpectralDensityEstimate
 
 
-ar = np.array([0.5, -0.6, 0.3, -0.4, 0.2])
 n_samples = 256
 n = int(np.floor(n_samples / 2))
-h = 0.05
+h = g = 0.05
+ar = np.array([0.5, -0.6, 0.3, -0.4, 0.2])
 
 # Generate AR(5) Series
 x = generate_ar_process(n_samples, ar)
@@ -53,4 +53,16 @@ x_centered = x - x.mean()
 # Step 2 Initial Estimate
 Ixx_density_centered = periodogramm(x_centered, n_samples)
 Cxx_estimate_centered = spectral_density_estimator(h, Ixx_density_centered, n_samples)
+
+# Step 3 Set the bootstrap parameters
+b = 38
+k = int(np.floor(n_samples / b))
+
+
+# Step 4 Draw Bootstrap Resamples
+set_for_i = np.arange(1, n_samples-b+2)
+i = np.zeros(k)
+for p in range(k):
+    i[p] = np.random.choice(set_for_i)
+m = np.arange(k)
 
