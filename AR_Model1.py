@@ -28,7 +28,7 @@ def spectral_density_estimator(h1, powerspec, samples):
         kernel = np.zeros(N + 1)
         for i2 in range(N + 1):
             kernel[i2] = kernel_function((omega[i1] - omega[i2]) / h1)
-        SpectralDensityEstimate[i1] = sum((kernel * powerspec) / (h1 * samples))
+        SpectralDensityEstimate[i1] = (2 * np.pi) * sum((kernel * powerspec) / (h1 * samples))
     return SpectralDensityEstimate
 
 
@@ -81,7 +81,7 @@ residuals_rescaled = residuals / np.mean(residuals)
 b_samples = 100
 b_sde = np.zeros([b_samples, n])
 for c in range(b_samples):
-    b_sde[c, :] = bootstrap_estimate(residuals, g, Cxx_estimate_centered, n)
+    b_sde[c, :] = bootstrap_estimate(residuals_rescaled, g, Cxx_estimate_centered, n)
 
 # Step 7 Confidence Interval Estimation
 

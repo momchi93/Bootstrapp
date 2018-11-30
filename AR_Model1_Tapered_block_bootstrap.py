@@ -39,36 +39,37 @@ def spectral_density_estimator(h1, powerspec, samples):
     return SpectralDensityEstimate
 
 
-def draw_block():
+def draw_block(time_series, tap_wind):
     x_block = np.zeros(b)
     i = np.random.choice(set_for_i)
     for j in range(b):
-        x_block[j] = tp_w[j] * const * x_centered[i + j]
+        x_block[j] = const * tap_wind[j] * time_series[i + j]
     return x_block
 
 
-def get_resample():
-    X_resamples_list = []
+def get_resample(time_series, tap_wind):
+    x_resamples_list = []
     for p in range(k):
-        block = draw_block()
-        X_resamples_list.append(block)
-    X_resamples = np.concatenate(np.array(X_resamples_list), axis=None)
-    return X_resamples
+        block = draw_block(time_series, tap_wind)
+        x_resamples_list.append(block)
+    x_resamples = np.concatenate(np.array(x_resamples_list), axis=None)
+    return x_resamples
 
-
-n_samples = 256
+np.random.seed(123)
+n_samples = 256  # length of time series
 n = int(np.floor(n_samples / 2))
 h = g = 0.05
-b = 38
-b_samples = 30
-ar = np.array([0.5, -0.6, 0.3, -0.4, 0.2])
-set_for_i = np.arange(1, n_samples - b + 2)  # integers representing start of a block
+b = 38  # block length
+b_samples = 100  # bootstrap samples
+ar = np.array([0.5, -0.6, 0.3, -0.4, 0.2])  # AR lag coefficient
+set_for_i = np.arange(1, n_samples - b + 1)  # integers representing start of a block
 w1 = np.arange(1, 17) / 16
 w2 = np.ones(6)
 w3 = np.flip(w1, axis=None)
 tp_w = np.concatenate((w1, w2, w3), axis=None)  # tapering window
-tp_w_2 = np.sqrt(np.sum(tp_w))  # Sum of tapering windows, squared
-const = np.sqrt(b) / tp_w_2
+tp_w_2 = np.sqrt(np.sum(tp_w))  # sum of tapering windows, squared
+const = np.sqrt(b) / tp_w_2  # constant for the drawing lock method
+alpha = 0.05  # confidence interval [alpha : 1 - alpha]
 
 # Generate AR(5) Series
 x = generate_ar_process(n_samples, ar)
@@ -87,20 +88,31 @@ l_half = int(l / 2)
 
 # Step 6 Repeat Step 4 & 5
 Cxx_estimate_centered_b = np.zeros([b_samples, l_half + 1])
-
-for b in range(b_samples):
+for b1 in range(b_samples):
     # Step 4 Draw Bootstrap Resamples
-    X_resample = get_resample()
-    # Step 5 Construct Bootstrap Estimate
+    X_resample = get_resample(x_centered, tp_w)
+    # Step 5 Construct Bootstrap Estimatef
     X_resamples_centered = X_resample - np.mean(X_resample)
-    #Ixx_density_centered_b = periodogramm(X_resamples_centered, l)
-    #Ixx_density_centered_b[0] = 0
-    #Cxx_estimate_centered_b[b, :] = spectral_density_estimator(h, Ixx_density_centered_b, l)
+    Ixx_density_centered_b = periodogramm(X_resample, l)
+    Ixx_density_centered_b[0] = 0
+    Cxx_estimate_centered_b[b1, :] = spectral_density_estimator(h, Ixx_density_centered_b, l)
 
 w = 2 * np.pi * np.arange(n + 1) / n_samples
-w1 = 2 * np.pi * np.arange(l_half + 1) / l
-#plt.plot(w, Cxx_estimate_centered)
-#plt.plot(w1, Cxx_estimate_centered_b)
-#plt.show()
+w_l = 2 * np.pi * np.arange(l_half + 1) / l
+# Step 7 Confidence Interval Estimation
+
+upper_index = int(np.ceil((b_samples - 1) * (1 - alpha)))
+lower_index = int(np.floor((b_samples - 1) * alpha))
+
+Cxx_estimate_centered_b.sort(axis=0)
+
+Cxx_estimate_centered_upper = Cxx_estimate_centered_b[upper_index, :]
+Cxx_estimate_centered_lower = Cxx_estimate_centered_b[lower_index, :]
+
+plt.plot(w, Cxx_estimate_centered, label='Spectral Density Estimate')
+plt.plot(w_l, Cxx_estimate_centered_upper, label='upper bound')
+plt.plot(w_l, Cxx_estimate_centered_lower, label='lower bound')
+plt.legend(loc='best')
+plt.show()
 
 print('finish')
