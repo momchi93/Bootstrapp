@@ -39,25 +39,37 @@ def spectral_density_estimator(h1, powerspec, samples):
     return SpectralDensityEstimate
 
 
-def draw_block(time_series, tap_wind):
-    x_block = np.zeros(b)
+def draw_block(time_series, tap_wind, length):
+    x_block = np.zeros(length)
     i = np.random.choice(set_for_i)
-    for j in range(b):
+    for j in range(length):
         x_block[j] = const * tap_wind[j] * time_series[i + j]
     return x_block
 
 
-def get_resample(time_series, tap_wind):
+def get_resample(time_series, tap_wind, length):
     x_resamples_list = []
     for p in range(k):
-        block = draw_block(time_series, tap_wind)
+        block = draw_block(time_series, tap_wind, length)
         x_resamples_list.append(block)
     x_resamples = np.concatenate(np.array(x_resamples_list), axis=None)
     return x_resamples
 
+
+def get_resample_full(time_series, tap_wind, length):
+    x_resamples_list = []
+    for p in range(k):
+        block = draw_block(time_series, tap_wind, length)
+        x_resamples_list.append(block)
+    block_last = draw_block(time_series, tap_wind, n_samples - l)
+    x_resamples_list.append(block_last)
+    x_resamples = np.concatenate(np.array(x_resamples_list), axis=None)
+    return x_resamples
+
+
 np.random.seed(123)
 n_samples = 256  # length of time series
-n = int(np.floor(n_samples / 2))
+n = int(np.floor(n_samples / 2))  # half of time series
 h = g = 0.05
 b = 38  # block length
 b_samples = 100  # bootstrap samples
@@ -68,7 +80,7 @@ w2 = np.ones(6)
 w3 = np.flip(w1, axis=None)
 tp_w = np.concatenate((w1, w2, w3), axis=None)  # tapering window
 tp_w_2 = np.sqrt(np.sum(tp_w))  # sum of tapering windows, squared
-const = np.sqrt(b) / tp_w_2  # constant for the drawing lock method
+const = np.sqrt(b) / tp_w_2  # constant for the draw_block method
 alpha = 0.05  # confidence interval [alpha : 1 - alpha]
 
 # Generate AR(5) Series
@@ -90,29 +102,47 @@ l_half = int(l / 2)
 Cxx_estimate_centered_b = np.zeros([b_samples, l_half + 1])
 for b1 in range(b_samples):
     # Step 4 Draw Bootstrap Resamples
-    X_resample = get_resample(x_centered, tp_w)
+    X_resample = get_resample(x_centered, tp_w, b)
     # Step 5 Construct Bootstrap Estimatef
     X_resamples_centered = X_resample - np.mean(X_resample)
     Ixx_density_centered_b = periodogramm(X_resample, l)
     Ixx_density_centered_b[0] = 0
     Cxx_estimate_centered_b[b1, :] = spectral_density_estimator(h, Ixx_density_centered_b, l)
 
-w = 2 * np.pi * np.arange(n + 1) / n_samples
-w_l = 2 * np.pi * np.arange(l_half + 1) / l
+Cxx_estimate_centered_b_full = np.zeros([b_samples, n + 1])
+for b2 in range(b_samples):
+    # Step 4 Draw Bootstrap Resamples
+    X_resample = get_resample_full(x_centered, tp_w, b)
+    # Step 5 Construct Bootstrap Estimatef
+    X_resamples_centered = X_resample - np.mean(X_resample)
+    Ixx_density_centered_b = periodogramm(X_resample, n_samples)
+    Ixx_density_centered_b[0] = 0
+    Cxx_estimate_centered_b_full[b2, :] = spectral_density_estimator(h, Ixx_density_centered_b, n)
 # Step 7 Confidence Interval Estimation
 
 upper_index = int(np.ceil((b_samples - 1) * (1 - alpha)))
 lower_index = int(np.floor((b_samples - 1) * alpha))
 
 Cxx_estimate_centered_b.sort(axis=0)
+Cxx_estimate_centered_b_full.sort(axis=0)
 
 Cxx_estimate_centered_upper = Cxx_estimate_centered_b[upper_index, :]
 Cxx_estimate_centered_lower = Cxx_estimate_centered_b[lower_index, :]
+Cxx_estimate_centered_full_upper = Cxx_estimate_centered_b_full[upper_index, :]
+Cxx_estimate_centered_full_lower = Cxx_estimate_centered_b_full[lower_index, :]
 
+w = 2 * np.pi * np.arange(n + 1) / n_samples
+w_l = 2 * np.pi * np.arange(l_half + 1) / l
+
+
+plt.subplot(211)
 plt.plot(w, Cxx_estimate_centered, label='Spectral Density Estimate')
 plt.plot(w_l, Cxx_estimate_centered_upper, label='upper bound')
 plt.plot(w_l, Cxx_estimate_centered_lower, label='lower bound')
 plt.legend(loc='best')
+plt.subplot(212)
+plt.plot(w, Cxx_estimate_centered, label='Spectral Density Estimate')
+plt.plot(w, Cxx_estimate_centered_full_upper, label='upper bound')
+plt.plot(w, Cxx_estimate_centered_full_lower, label='lower bound')
+plt.legend(loc='best')
 plt.show()
-
-print('finish')
