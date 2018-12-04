@@ -98,3 +98,24 @@ plt.plot(w, Cxx_estimate_centered_upper, label='upper bound')
 plt.plot(w, Cxx_estimate_centered_lower, label='lower bound')
 plt.legend(loc='best')
 plt.show()
+
+# test
+# 1.05537878 = w[43] , 1.9880391 = w[81] max values
+b_samples = 1000
+coverage_probability_list = []
+for d in range(b_samples):
+    b_sde_Monte_Carlo = np.zeros([b_samples, n])
+    for d1 in range(b_samples):
+        b_sde_Monte_Carlo[d1, :] = bootstrap_estimate(residuals_rescaled, g, Cxx_estimate_centered, n)
+    b_sde.sort(axis=0)
+    Cxx_estimate_centered_upper = b_sde[upper_index, :]
+    Cxx_estimate_centered_lower = b_sde[lower_index, :]
+    if Cxx_estimate_centered_upper[43] < Cxx_estimate_centered[43] \
+            or Cxx_estimate_centered_lower[43] > Cxx_estimate_centered[43] \
+            or Cxx_estimate_centered_upper[81] < Cxx_estimate_centered[81] \
+            or Cxx_estimate_centered_lower[81] > Cxx_estimate_centered[81]:
+        coverage_probability_list.append(0)
+    else:
+        coverage_probability_list.append(1)
+coverage_probability = 100 * np.mean(np.array(coverage_probability_list))
+print('Coverage Probability = ' + coverage_probability + '%')

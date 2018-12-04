@@ -42,7 +42,7 @@ def get_C_XX_hat(I_XX, T, h):
 
     C_XX_hat = np.zeros(N+1)
     for k in range(N+1):
-        C_XX_hat[k] = np.sum(kernel((w[k]-w)/h) * I_XX) / (h*T)
+        C_XX_hat[k] = (2 * np.pi) * np.sum(kernel((w[k]-w)/h) * I_XX) / (h*T)
 
     return C_XX_hat
 
