@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from statsmodels.tsa.arima_process import ArmaProcess
+import time
 
 
 # Function Defintions
@@ -52,6 +53,7 @@ def get_C_XX_hat(I_XX, T, h):
 
 # set parameter
 np.random.seed(123)
+start_time = time.time()
 T = 256
 N = int(np.floor(T/2))
 h = 0.05
@@ -96,3 +98,29 @@ plt.plot(w, C_XX_hat)
 plt.plot(w, C_XX_hat_upper)
 plt.plot(w, C_XX_hat_lower)
 plt.show()
+elapsed_time = time.time() - start_time
+print('elapsed_time for 100 Bootstraps: ' + str(elapsed_time))
+
+# test
+BSR = 2
+upper_index = int(np.ceil((BSR - 1) * (1 - alpha)))
+lower_index = int(np.floor((BSR - 1) * alpha))
+coverage_probability_list = []
+for d in range(1000):
+        b_sde_Monte_Carlo = np.zeros([BSR, N+1])
+        for d1 in range(BSR):
+            eps_star = np.random.choice(eps, eps.size)
+            I_XX_star = C_XX_hat * eps_star
+            I_XX_star[0] = 0
+            b_sde_Monte_Carlo[d1, :] = get_C_XX_hat(I_XX_star, T, g)
+        b_sde_Monte_Carlo.sort(axis=0)
+        Cxx_estimate_centered_upper = b_sde_Monte_Carlo[upper_index, :]
+        Cxx_estimate_centered_lower = b_sde_Monte_Carlo[lower_index, :]
+        low_hits = np.count_nonzero(Cxx_estimate_centered_lower < C_XX_hat)
+        up_hits = np.count_nonzero(C_XX_hat < Cxx_estimate_centered_upper)
+        coverage_probability_list.append((low_hits + up_hits) / (2 * np.size(Cxx_estimate_centered_lower)))
+
+coverage_probability = 100 * np.mean(np.array(coverage_probability_list))
+print('Coverage Probability = ' + str(coverage_probability) + '%')
+elapsed_time = time.time() - start_time
+print('elapsed_time for coverage_probability: ' + str(elapsed_time))

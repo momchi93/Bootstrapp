@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from statsmodels.tsa.arima_process import ArmaProcess
-
+import statsmodels.tsa.arima_process
+import time
 
 def generate_ar_process(N, ar):
-    ar_process = ArmaProcess(np.r_[1, -ar], np.array([1]))
+    ar_process = statsmodels.tsa.arima_process.ArmaProcess(np.r_[1, -ar], np.array([1]))
     X = ar_process.generate_sample(N)
     return X
 
@@ -68,6 +68,7 @@ def get_resample_full(time_series, tap_wind, length):
 
 
 np.random.seed(123)
+start_time = time.time()
 n_samples = 256  # length of time series
 n = int(np.floor(n_samples / 2))  # half of time series
 h = g = 0.05
@@ -133,16 +134,54 @@ Cxx_estimate_centered_full_lower = Cxx_estimate_centered_b_full[lower_index, :]
 
 w = 2 * np.pi * np.arange(n + 1) / n_samples
 w_l = 2 * np.pi * np.arange(l_half + 1) / l
+Tapered_X1 = get_resample_full(x_centered, tp_w, b)
+Tapered_X2 = get_resample_full(x_centered, tp_w, b)
 
 
-plt.subplot(211)
+plt.subplot(221)
 plt.plot(w, Cxx_estimate_centered, label='Spectral Density Estimate')
 plt.plot(w_l, Cxx_estimate_centered_upper, label='upper bound')
 plt.plot(w_l, Cxx_estimate_centered_lower, label='lower bound')
 plt.legend(loc='best')
-plt.subplot(212)
+plt.subplot(222)
 plt.plot(w, Cxx_estimate_centered, label='Spectral Density Estimate')
 plt.plot(w, Cxx_estimate_centered_full_upper, label='upper bound')
 plt.plot(w, Cxx_estimate_centered_full_lower, label='lower bound')
 plt.legend(loc='best')
-plt.show()
+plt.subplot(223)
+plt.plot(Tapered_X1, label='Tapered_X1')
+plt.plot(x_centered, label='Original_X')
+plt.legend(loc='best')
+plt.subplot(224)
+plt.plot(Tapered_X2, label='Tapered_X2')
+plt.plot(x_centered, label='Original_X')
+plt.legend(loc='best')
+#plt.show()
+
+# test
+b_samples = 10
+upper_index = int(np.ceil((b_samples - 1) * (1 - alpha)))
+lower_index = int(np.floor((b_samples - 1) * alpha))
+coverage_probability_list = []
+for d in range(100):
+    Cxx_estimate_centered_b_full_Monte_Carlo = np.zeros([b_samples, n + 1])
+    for b3 in range(b_samples):
+        # Step 4 Draw Bootstrap Resamples
+        X_resample = get_resample_full(x_centered, tp_w, b)
+        # Step 5 Construct Bootstrap Estimatef
+        X_resamples_centered = X_resample - np.mean(X_resample)
+        Ixx_density_centered_b = periodogramm(X_resample, n_samples)
+        Ixx_density_centered_b[0] = 0
+        Cxx_estimate_centered_b_full_Monte_Carlo[b3, :] = spectral_density_estimator(h, Ixx_density_centered_b, n)
+        # Step 7 Confidence Interval Estimation
+        Cxx_estimate_centered_b_full_Monte_Carlo.sort(axis=0)
+        Cxx_estimate_centered_upper = Cxx_estimate_centered_b_full_Monte_Carlo[upper_index, :]
+        Cxx_estimate_centered_lower = Cxx_estimate_centered_b_full_Monte_Carlo[lower_index, :]
+        low_hits = np.count_nonzero(Cxx_estimate_centered_lower < Cxx_estimate_centered)
+        up_hits = np.count_nonzero(Cxx_estimate_centered < Cxx_estimate_centered_upper)
+        coverage_probability_list.append((low_hits + up_hits) / (2 * np.size(Cxx_estimate_centered_lower)))
+
+coverage_probability = 100 * np.mean(np.array(coverage_probability_list))
+print('Coverage Probability = ' + str(coverage_probability) + '%')
+elapsed_time = time.time() - start_time
+print('elapsed_time for coverage_probability: ' + str(elapsed_time))
