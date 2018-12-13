@@ -104,8 +104,6 @@ plt.show()
 # test
 b_samples = 6
 Monte_Carlo_runs = 100
-upper_index = int(np.ceil((b_samples - 1) * (1 - alpha)))
-lower_index = int(np.floor((b_samples - 1) * alpha))
 coverage_probability_list = []
 for d in range(Monte_Carlo_runs):
     b_sde_Monte_Carlo = np.zeros([b_samples, n])
