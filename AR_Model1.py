@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
+
 def periodogramm(inputt, samples):
     t = np.arange(samples)
     N = int(np.floor(samples / 2))
@@ -46,6 +47,7 @@ def bootstrap_estimate(res, g, sde_centered, samples):
     pxxdensity[0] = 0
     bootstrap_spectral_density_estimate = spectral_density_estimator(g, pxxdensity, samples)
     return bootstrap_spectral_density_estimate
+
 
 np.random.seed(123)
 start_time = time.time()
@@ -97,26 +99,28 @@ plt.plot(w, Cxx_estimate_centered, label='Spectral Density Estimate')
 plt.plot(w, Cxx_estimate_centered_upper, label='upper bound')
 plt.plot(w, Cxx_estimate_centered_lower, label='lower bound')
 plt.legend(loc='best')
-#plt.show()
-
+plt.show()
 
 # test
 b_samples = 6
+Monte_Carlo_runs = 100
 upper_index = int(np.ceil((b_samples - 1) * (1 - alpha)))
 lower_index = int(np.floor((b_samples - 1) * alpha))
 coverage_probability_list = []
-for d in range(1000):
-        b_sde_Monte_Carlo = np.zeros([b_samples, n])
-        for d1 in range(b_samples):
-            b_sde_Monte_Carlo[d1, :] = bootstrap_estimate(residuals_rescaled, g, Cxx_estimate_centered, n)
-        b_sde_Monte_Carlo.sort(axis=0)
-        Cxx_estimate_centered_upper = b_sde_Monte_Carlo[upper_index, :]
-        Cxx_estimate_centered_lower = b_sde_Monte_Carlo[lower_index, :]
-        low_hits = np.count_nonzero(Cxx_estimate_centered_lower < Cxx_estimate_centered)
-        up_hits = np.count_nonzero(Cxx_estimate_centered < Cxx_estimate_centered_upper)
-        coverage_probability_list.append((low_hits + up_hits) / (2 * np.size(Cxx_estimate_centered_lower)))
+for d in range(Monte_Carlo_runs):
+    b_sde_Monte_Carlo = np.zeros([b_samples, n])
+    for d1 in range(b_samples):
+        b_sde_Monte_Carlo[d1, :] = bootstrap_estimate(residuals_rescaled, g, Cxx_estimate_centered, n)
+    b_sde_Monte_Carlo.sort(axis=0)
+    Cxx_estimate_centered_upper = b_sde_Monte_Carlo[b_samples - 1, :]
+    Cxx_estimate_centered_lower = b_sde_Monte_Carlo[0, :]
+    low_hits = np.count_nonzero(Cxx_estimate_centered_lower < Cxx_estimate_centered)
+    up_hits = np.count_nonzero(Cxx_estimate_centered < Cxx_estimate_centered_upper)
+    coverage_probability_list.append((low_hits + up_hits) / (2 * np.size(Cxx_estimate_centered_lower)))
 
 coverage_probability = 100 * np.mean(np.array(coverage_probability_list))
+print('Frequency Domain Residual-based Bootstrap')
+print('bootstrap_samples = ' + str(b_samples) + ' , Monte_Carlo_runs = ' + str(Monte_Carlo_runs))
 print('Coverage Probability = ' + str(coverage_probability) + '%')
 elapsed_time = time.time() - start_time
 print('elapsed_time for coverage_probability: ' + str(elapsed_time))
